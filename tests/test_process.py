@@ -65,3 +65,21 @@ def test_apply_controls_maps_plc_commands_to_process_flows() -> None:
     assert state.influent_flow_lpm == pytest.approx(80.0)
     assert state.effluent_flow_lpm == pytest.approx(40.0)
     assert state.dosing_flow_lpm == pytest.approx(1.0)
+
+
+def test_plant_state_exports_standard_process_tags() -> None:
+    state = PlantState(
+        tank_level_pct=42.0,
+        reactor_ph=6.9,
+        influent_flow_lpm=30.0,
+        effluent_flow_lpm=25.0,
+        dosing_flow_lpm=0.5,
+    )
+
+    assert state.as_tags() == {
+        "tank_level_pct": 42.0,
+        "reactor_ph": 6.9,
+        "influent_flow_lpm": 30.0,
+        "effluent_flow_lpm": 25.0,
+        "dosing_flow_lpm": 0.5,
+    }

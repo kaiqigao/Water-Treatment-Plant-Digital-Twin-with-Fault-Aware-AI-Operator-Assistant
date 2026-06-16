@@ -13,6 +13,14 @@ class PlantState:
     effluent_flow_lpm: float = 20.0
     dosing_flow_lpm: float = 0.0
 
+    def as_tags(self) -> dict[str, float]:
+        return {
+            "tank_level_pct": self.tank_level_pct,
+            "reactor_ph": self.reactor_ph,
+            "influent_flow_lpm": self.influent_flow_lpm,
+            "effluent_flow_lpm": self.effluent_flow_lpm,
+            "dosing_flow_lpm": self.dosing_flow_lpm,
+        }
 
 @dataclass(frozen=True)
 class ProcessConfig:
