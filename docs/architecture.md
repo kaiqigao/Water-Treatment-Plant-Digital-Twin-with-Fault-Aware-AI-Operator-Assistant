@@ -10,6 +10,8 @@ Process simulator -> Simulated PLC -> MQTT broker -> Historian
                                       -> Fault detector -> AI operator assistant
 ```
 
+The Step 2 process simulator is visualized in [Process Simulator](process-simulator.md).
+
 ## Purdue / ISA-95 Mapping
 
 | Layer | Project component |

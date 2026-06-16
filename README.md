@@ -57,6 +57,7 @@ During the demo, the dashboard should show normal plant operation, allow control
 See:
 
 - [Architecture](docs/architecture.md)
+- [Process Simulator](docs/process-simulator.md)
 - [Tag Dictionary](docs/tag-dictionary.md)
 - [Fault Catalog](docs/fault-catalog.md)
 - [Demo Script](docs/demo-script.md)
