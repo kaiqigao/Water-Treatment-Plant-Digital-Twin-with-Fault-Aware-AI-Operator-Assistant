@@ -1,0 +1,23 @@
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: wtdt-mqtt
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  dashboard:
+    build: .
+    container_name: wtdt-dashboard
+    command: streamlit run src/wtdt/dashboard/app.py --server.address 0.0.0.0
+    environment:
+      MQTT_HOST: mqtt
+      MQTT_PORT: "1883"
+      HISTORIAN_PATH: /data/historian.sqlite
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/data
+    depends_on:
+      - mqtt
