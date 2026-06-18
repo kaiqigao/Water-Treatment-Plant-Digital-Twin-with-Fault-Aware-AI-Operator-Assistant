@@ -1,0 +1,2 @@
+[console_scripts]
+wtdt = wtdt.__main__:main
