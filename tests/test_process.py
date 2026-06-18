@@ -1,6 +1,6 @@
 import pytest
 
-from wtdt.simulator.process import PlantState, WaterTreatmentProcess
+from wtdt.simulator.process import FaultScenario, PlantState, WaterTreatmentProcess
 
 
 def test_tank_level_rises_when_influent_exceeds_effluent() -> None:
@@ -83,3 +83,35 @@ def test_plant_state_exports_standard_process_tags() -> None:
         "effluent_flow_lpm": 25.0,
         "dosing_flow_lpm": 0.5,
     }
+
+
+def test_sensor_ph_drift_changes_measured_tag_only() -> None:
+    process = WaterTreatmentProcess(PlantState(reactor_ph=6.8))
+
+    process.inject_fault(FaultScenario.SENSOR_PH_DRIFT)
+    tags = process.read_tags()
+
+    assert tags["actual_reactor_ph"] == pytest.approx(6.8)
+    assert tags["reactor_ph"] == pytest.approx(7.7)
+
+
+def test_dosing_pump_failure_forces_zero_feedback_flow() -> None:
+    process = WaterTreatmentProcess()
+    process.inject_fault(FaultScenario.EQUIPMENT_DOSING_PUMP_FAILURE)
+
+    state = process.apply_controls(
+        inlet_pump_cmd=False,
+        outlet_valve_cmd_pct=0.0,
+        dosing_pump_cmd_pct=80.0,
+    )
+
+    assert state.dosing_flow_lpm == 0.0
+
+
+def test_process_ph_shock_drives_ph_downward() -> None:
+    process = WaterTreatmentProcess(PlantState(reactor_ph=7.0))
+    process.inject_fault(FaultScenario.PROCESS_PH_SHOCK)
+
+    state = process.step(seconds=60.0)
+
+    assert state.reactor_ph < 7.0

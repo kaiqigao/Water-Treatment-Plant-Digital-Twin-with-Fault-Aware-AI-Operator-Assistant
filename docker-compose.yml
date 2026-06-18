@@ -7,6 +7,26 @@ services:
     volumes:
       - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
+  simulator:
+    build: .
+    container_name: wtdt-simulator
+    command:
+      - python
+      - -m
+      - wtdt
+      - --steps
+      - "600"
+      - --sleep
+      - --mqtt
+      - --mqtt-host
+      - mqtt
+      - --historian-path
+      - /data/historian.sqlite
+    volumes:
+      - ./data:/data
+    depends_on:
+      - mqtt
+
   dashboard:
     build: .
     container_name: wtdt-dashboard
@@ -21,3 +41,4 @@ services:
       - ./data:/data
     depends_on:
       - mqtt
+      - simulator

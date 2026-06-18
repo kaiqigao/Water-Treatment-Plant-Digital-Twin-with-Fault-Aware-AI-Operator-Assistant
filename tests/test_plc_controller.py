@@ -45,6 +45,7 @@ def test_low_ph_increases_dosing_command() -> None:
     assert commands["plc_state"] == PlcState.TREATING.value
     assert commands["dosing_pump_cmd_pct"] > 0.0
     assert commands["ph_setpoint"] == 7.0
+    assert commands["ph_pid_output_pct"] == commands["dosing_pump_cmd_pct"]
 
 
 def test_high_ph_stops_dosing_without_fault_inside_safe_range() -> None:
@@ -95,3 +96,27 @@ def test_plc_commands_feed_the_process_simulator() -> None:
 
     assert state.influent_flow_lpm > 0.0
     assert state.dosing_flow_lpm > 0.0
+
+
+def test_setpoints_change_pid_outputs() -> None:
+    plc = SimulatedPlc()
+
+    higher_ph = plc.scan(
+        tank_level_pct=50.0,
+        reactor_ph=7.0,
+        ph_setpoint=7.5,
+        tank_level_setpoint_pct=65.0,
+    )
+    plc.reset()
+    lower_level = plc.scan(
+        tank_level_pct=70.0,
+        reactor_ph=7.0,
+        ph_setpoint=7.0,
+        tank_level_setpoint_pct=55.0,
+    )
+
+    assert higher_ph["ph_pid_output_pct"] > 0.0
+    assert higher_ph["level_pid_output_pct"] > 0.0
+    assert higher_ph["inlet_pump_cmd"] is True
+    assert lower_level["level_pid_output_pct"] < 0.0
+    assert lower_level["outlet_valve_cmd_pct"] > 0.0
