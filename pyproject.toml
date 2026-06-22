@@ -9,6 +9,7 @@ description = "TUMA206 water treatment plant digital twin with PLC simulation, M
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "altair>=5.0.0",
     "paho-mqtt>=2.1.0",
     "pydantic>=2.7.0",
     "streamlit>=1.35.0",

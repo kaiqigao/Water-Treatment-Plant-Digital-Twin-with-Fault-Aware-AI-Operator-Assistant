@@ -723,4 +723,5 @@ def _render_alarms(snapshot) -> None:
         )
 
 
-main()
+if __name__ == "__main__":
+    main()
