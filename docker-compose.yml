@@ -27,6 +27,26 @@ services:
     depends_on:
       - mqtt
 
+  cloud-bridge:
+    build: .
+    container_name: wtdt-cloud-bridge
+    profiles:
+      - cloud
+    command:
+      - python
+      - -m
+      - wtdt.cloud_bridge.main
+    environment:
+      LOCAL_MQTT_HOST: mqtt
+      LOCAL_MQTT_PORT: "1883"
+      TB_HOST: ${TB_HOST:-mqtt.thingsboard.cloud}
+      TB_PORT: ${TB_PORT:-1883}
+      TB_TOKEN: ${TB_TOKEN:-paste_your_device_access_token_here}
+      FLUSH_INTERVAL_S: ${FLUSH_INTERVAL_S:-1.0}
+    depends_on:
+      - mqtt
+      - simulator
+
   dashboard:
     build: .
     container_name: wtdt-dashboard
