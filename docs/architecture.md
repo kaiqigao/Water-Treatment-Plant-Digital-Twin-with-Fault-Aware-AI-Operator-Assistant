@@ -8,6 +8,7 @@ The project models a water treatment plant as a complete industrial stack:
 Process simulator -> Simulated PLC -> MQTT broker -> Historian
                                       -> Dashboard
                                       -> Fault detector -> AI operator assistant
+                                      -> Cloud bridge -> ThingsBoard Cloud
 ```
 
 The Step 2 process simulator is visualized in [Process Simulator](process-simulator.md).
@@ -20,11 +21,13 @@ The Step 2 process simulator is visualized in [Process Simulator](process-simula
 | Level 1 Control | Simulated PLC scan cycle, PID, state machine |
 | Level 2 Supervisory | Dashboard, alarms, fault injection controls |
 | Level 3 Operations | Historian and tag dictionary |
-| Level 4 IT / analytics | AI operator assistant and reports |
+| Level 3.5 DMZ / gateway | Cloud bridge that forwards local MQTT tags upward |
+| Level 4 IT / analytics | ThingsBoard dashboard, AI operator assistant, and reports |
 
 ## Stack Justification
 
 - MQTT is lightweight and widely used in IIoT pipelines.
+- The cloud bridge keeps PLC telemetry local first, then forwards a throttled tag batch to ThingsBoard.
 - Python keeps the simulation and control logic easy to inspect during viva.
 - SQLite is reliable for the first historian implementation and can be replaced by InfluxDB later.
 - Streamlit provides a quick operator-facing dashboard suitable for a live demo.

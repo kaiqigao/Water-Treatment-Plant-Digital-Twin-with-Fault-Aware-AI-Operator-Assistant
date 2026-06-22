@@ -1,8 +1,10 @@
 import json
 from dataclasses import dataclass
+from datetime import datetime
+from time import time
 from typing import Any
 
-from wtdt.messaging.topics import ALARM_EVENT_TOPIC, PLANT_STATE_TOPIC, PLC_COMMAND_TOPIC
+from wtdt.messaging.topics import ALARM_EVENT_TOPIC, PLANT_STATE_TOPIC, PLC_COMMAND_TOPIC, cloud_tag_topic
 from wtdt.runtime import SimulationSnapshot
 
 
@@ -49,6 +51,8 @@ class MqttTelemetryPublisher:
         ]
         for alarm in build_alarm_payloads(snapshot):
             results.append(self.publish_json(ALARM_EVENT_TOPIC, alarm))
+        for topic, payload in build_cloud_tag_payloads(snapshot):
+            results.append(self.publish_json(topic, payload))
         return results
 
 
@@ -107,3 +111,37 @@ def build_alarm_payloads(snapshot: SimulationSnapshot) -> list[dict[str, Any]]:
             strict=True,
         )
     ]
+
+
+def build_cloud_tag_payloads(snapshot: SimulationSnapshot) -> list[tuple[str, dict[str, float]]]:
+    timestamp = _snapshot_unix_seconds(snapshot)
+    payloads: list[tuple[str, dict[str, float]]] = []
+
+    for tag_name, value in sorted(snapshot.tags.items()):
+        numeric_value = _as_cloud_value(value)
+        if numeric_value is None:
+            continue
+        payloads.append((cloud_tag_topic(tag_name), {"v": numeric_value, "t": timestamp}))
+
+    payloads.append(
+        (
+            cloud_tag_topic("ALARM_ACTIVE"),
+            {"v": 1.0 if snapshot.alarm_active else 0.0, "t": timestamp},
+        )
+    )
+    return payloads
+
+
+def _as_cloud_value(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return 1.0 if value else 0.0
+    if isinstance(value, int | float):
+        return float(value)
+    return None
+
+
+def _snapshot_unix_seconds(snapshot: SimulationSnapshot) -> float:
+    try:
+        return datetime.fromisoformat(snapshot.timestamp_utc).timestamp()
+    except ValueError:
+        return time()

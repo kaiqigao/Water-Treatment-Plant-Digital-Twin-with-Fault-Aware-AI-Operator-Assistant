@@ -20,6 +20,7 @@ This project will implement a working digital twin of a water treatment plant wi
 - Eclipse Mosquitto for MQTT messaging.
 - SQLite as the initial lightweight historian, with an easy path to InfluxDB.
 - Streamlit for the operator dashboard.
+- ThingsBoard Cloud bridge for L3.5 -> L4 telemetry forwarding.
 - Docker Compose for reproducible local startup.
 
 ## Repository Structure
@@ -32,6 +33,7 @@ This project will implement a working digital twin of a water treatment plant wi
 ├── src/wtdt/
 │   ├── agent/              # Fault detector and operator assistant
 │   ├── dashboard/          # Operator dashboard
+│   ├── cloud_bridge/       # Local MQTT tag stream -> ThingsBoard Cloud bridge
 │   ├── historian/          # Time-series writer and query helpers
 │   ├── messaging/          # MQTT topics, publisher, subscriber helpers
 │   ├── plc/                # PLC scan cycle, state machine, PID
@@ -50,6 +52,36 @@ pip install -e ".[dev]"
 python -m wtdt
 ```
 
+## ThingsBoard Cloud Bridge
+
+The simulator publishes a ThingsBoard-compatible tag stream whenever MQTT is enabled:
+
+```text
+Topic: plant/tags/<TAG_NAME>
+Payload: {"v": <float>, "t": <unix_seconds_float>}
+```
+
+To forward those tags to ThingsBoard Cloud:
+
+1. Create a ThingsBoard device and copy its access token.
+2. Copy `.env.example` to `.env`.
+3. Set `TB_TOKEN` in `.env`.
+4. Run the simulator and bridge:
+
+```bash
+docker compose --profile cloud up --build
+```
+
+For a local dry run without publishing to ThingsBoard:
+
+```bash
+python -m wtdt --mqtt --steps 60 --sleep
+python -m wtdt.cloud_bridge.main --dry-run
+```
+
+The bridge follows the TUMA206 reference pattern: the PLC/simulator only publishes to the local
+Mosquitto broker, and a separate bridge process forwards batched telemetry upward to the cloud.
+
 ## Demo Goal
 
 During the demo, the dashboard should show normal plant operation, allow controlled fault injection, and display alarms plus assistant recommendations within 60 seconds.
@@ -57,6 +89,7 @@ During the demo, the dashboard should show normal plant operation, allow control
 See:
 
 - [Architecture](docs/architecture.md)
+- [Cloud Bridge](docs/cloud-bridge.md)
 - [Process Simulator](docs/process-simulator.md)
 - [Tag Dictionary](docs/tag-dictionary.md)
 - [Fault Catalog](docs/fault-catalog.md)

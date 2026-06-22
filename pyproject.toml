@@ -23,6 +23,7 @@ dev = [
 
 [project.scripts]
 wtdt = "wtdt.__main__:main"
+wtdt-cloud-bridge = "wtdt.cloud_bridge.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
