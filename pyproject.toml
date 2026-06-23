@@ -24,8 +24,10 @@ dev = [
 
 [project.scripts]
 wtdt = "wtdt.__main__:main"
+wtdt-agent = "wtdt.agent_cli:main"
 wtdt-cloud-bridge = "wtdt.cloud_bridge.main:main"
 wtdt-telegram-alerts = "wtdt.telegram_alerts.main:main"
+wtdt-telegram-bot = "wtdt.telegram_alerts.query_bot:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

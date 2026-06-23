@@ -68,6 +68,27 @@ services:
       - mqtt
       - simulator
 
+  telegram-bot:
+    build: .
+    container_name: wtdt-telegram-bot
+    profiles:
+      - telegram-bot
+    command:
+      - python
+      - -m
+      - wtdt.telegram_alerts.query_bot
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-paste_your_telegram_bot_token_here}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-paste_your_chat_id_here}
+      DRY_RUN: ${DRY_RUN:-true}
+      HISTORIAN_PATH: /data/historian.sqlite
+      TELEGRAM_POLL_S: ${TELEGRAM_POLL_S:-1.0}
+      TELEGRAM_TIMEOUT_S: ${TELEGRAM_TIMEOUT_S:-15.0}
+    volumes:
+      - ./data:/data
+    depends_on:
+      - simulator
+
   dashboard:
     build: .
     container_name: wtdt-dashboard

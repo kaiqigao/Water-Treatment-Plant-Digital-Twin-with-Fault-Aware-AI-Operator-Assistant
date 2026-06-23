@@ -7,6 +7,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+from wtdt.agent.operator_agent import OperatorDiagnosis, diagnose_snapshot
 from wtdt.historian.store import SQLiteHistorian
 from wtdt.runtime import SimulationRuntime
 from wtdt.simulator.process import FaultScenario
@@ -672,6 +673,10 @@ def _history_frame(tags: list[str]) -> pd.DataFrame:
 
 def _render_alarms(snapshot) -> None:
     _render_section_title("Alarm System", "current status + evidence + assistant action")
+    diagnosis = diagnose_snapshot(
+        snapshot,
+        recent_snapshots=st.session_state.snapshots[-MAX_TREND_SAMPLES:],
+    )
     state_col, table_col, advice_col = st.columns([0.85, 2.25, 1.1], gap="small")
     state_text = "ACTIVE" if snapshot.alarm_active else "CLEAR"
     state_color = "#d92d20" if snapshot.alarm_active else "#2f855a"
@@ -700,14 +705,7 @@ def _render_alarms(snapshot) -> None:
                 height=116,
             )
         with advice_col:
-            st.html(
-                """
-                <div class="wtdt-advisor">
-                  <strong>Assistant recommendation</strong>
-                  Continue monitoring the plant. No operator intervention is required.
-                </div>
-                """
-            )
+            st.html(_diagnosis_html(diagnosis))
         return
 
     alarm_rows = [
@@ -716,24 +714,35 @@ def _render_alarms(snapshot) -> None:
             "code": detection.code,
             "evidence": " ".join(detection.evidence),
         }
-        for detection, recommendation in zip(
-            snapshot.detections,
-            snapshot.recommendations,
-            strict=True,
-        )
+        for detection in snapshot.detections
     ]
     with table_col:
         st.dataframe(pd.DataFrame(alarm_rows), hide_index=True, width="stretch", height=116)
-    recommendations = "<br>".join(escape(recommendation) for recommendation in snapshot.recommendations)
     with advice_col:
-        st.html(
-            f"""
-            <div class="wtdt-advisor">
-              <strong>Assistant recommendation</strong>
-              {recommendations}
-            </div>
-            """
-        )
+        st.html(_diagnosis_html(diagnosis))
+
+
+def _diagnosis_html(diagnosis: OperatorDiagnosis) -> str:
+    checks = _compact_list_html(diagnosis.checks[:2])
+    actions = _compact_list_html(diagnosis.actions[:2])
+    evidence = _compact_list_html(diagnosis.evidence[:2])
+    return f"""
+    <div class="wtdt-advisor">
+      <strong>Operator agent</strong>
+      <div style="font-weight:850;margin-bottom:5px;">{escape(diagnosis.summary)}</div>
+      <div style="margin-bottom:5px;"><b>Evidence</b>{evidence}</div>
+      <div style="margin-bottom:5px;"><b>Checks</b>{checks}</div>
+      <div><b>Actions</b>{actions}</div>
+    </div>
+    """
+
+
+def _compact_list_html(items: list[str]) -> str:
+    if not items:
+        return "<div>None.</div>"
+    return "<ul style='margin:4px 0 0 18px;padding:0;'>" + "".join(
+        f"<li>{escape(item)}</li>" for item in items
+    ) + "</ul>"
 
 
 def _notify_telegram(snapshot) -> None:

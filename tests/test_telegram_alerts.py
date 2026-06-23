@@ -73,6 +73,9 @@ def test_alarm_message_includes_operator_context() -> None:
     assert "[ALARM] equipment.dosing_pump_failure" in message
     assert "severity: high" in message
     assert "evidence:" in message
+    assert "agent summary:" in message
+    assert "check:" in message
+    assert "action:" in message
     assert "recommendation:" in message
 
 
@@ -83,6 +86,9 @@ def test_dashboard_alarm_events_mirror_snapshot_detections() -> None:
 
     assert events
     assert events[0].code == "infrastructure.mqtt_disconnected"
+    assert events[0].summary
+    assert events[0].checks
+    assert events[0].actions
     assert events[0].timestamp_utc == snapshot.timestamp_utc
     assert events[0].sequence == snapshot.sequence
 

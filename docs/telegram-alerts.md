@@ -11,6 +11,10 @@ The simulator and PLC do not know Telegram exists. They only publish alarm event
 MQTT broker. The alerter is a separate process that subscribes to those events, suppresses repeated
 messages while the same alarm is still active, and sends one short Telegram message for a fresh trip.
 
+The project also includes an optional Telegram query bot. It lets an operator ask questions such as
+`现在系统有什么问题？` or `/status`. The bot reads the latest historian snapshot, runs the Operator
+Agent diagnosis, and replies in Telegram.
+
 ## Telegram Setup
 
 1. In Telegram, open `@BotFather`.
@@ -33,6 +37,8 @@ TELEGRAM_CHAT_ID=123456789
 DRY_RUN=true
 TELEGRAM_THROTTLE_S=60.0
 TELEGRAM_CLEAR_AFTER_S=5.0
+TELEGRAM_POLL_S=1.0
+TELEGRAM_TIMEOUT_S=15.0
 ```
 
 Keep `DRY_RUN=true` while testing. In dry-run mode, the alerter prints the Telegram message instead
@@ -64,10 +70,49 @@ The alerter sends messages shaped like:
 [ALARM] equipment.dosing_pump_failure
 severity: high
 evidence: Dosing command is 50.0% but flow feedback is 0.00 L/min.
+agent summary: Active abnormal condition detected: equipment.dosing_pump_failure.
+check: Check pump power, run indication, local isolator, suction line, and dosing tank level.
+action: Check dosing pump power, local isolator, and feedback wiring. Limit influent flow and switch to standby dosing if available.
 recommendation: Inspect the dosing pump, chemical line, power supply, and valve state.
 ```
 
 When dry-run output looks correct, set `DRY_RUN=false` and restart the alerter.
+
+## Telegram Query Bot
+
+Run the dashboard or simulator first so `data/historian.sqlite` has current plant samples. Then run:
+
+```bash
+python -m wtdt.telegram_alerts.query_bot
+```
+
+In Telegram, send one of:
+
+```text
+/status
+现在系统有什么问题？
+有异常吗？
+current status
+```
+
+The bot replies with the latest Operator Agent diagnosis:
+
+```text
+[WTDT Operator Agent]
+state: alarm
+severity: high
+summary: Active abnormal condition detected: equipment.dosing_pump_failure.
+evidence: Dosing command is 30.3% but flow feedback is 0.00 L/min.
+check: Check pump power, run indication, local isolator, suction line, and dosing tank level.
+action: Check dosing pump power, local isolator, and feedback wiring. Limit influent flow and switch to standby dosing if available.
+safety: Keep PLC control and field operation under human supervision.
+```
+
+You can test the reply formatting without connecting to Telegram:
+
+```bash
+python -m wtdt.telegram_alerts.query_bot --once-text "现在系统有什么问题？"
+```
 
 ## Docker Compose
 
@@ -75,6 +120,12 @@ Run the simulator, MQTT broker, and Telegram alerter:
 
 ```bash
 docker compose --profile telegram up --build
+```
+
+Run the Telegram query bot with the shared historian volume:
+
+```bash
+docker compose --profile telegram-bot up --build
 ```
 
 The Compose service reads `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DRY_RUN`,

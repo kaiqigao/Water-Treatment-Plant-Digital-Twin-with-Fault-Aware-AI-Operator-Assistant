@@ -108,6 +108,15 @@ The Streamlit dashboard also sends Telegram messages when its Fault Injection bu
 alarm detections. On Streamlit Cloud, add `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `DRY_RUN` to
 the app's Secrets because the cloud app cannot read your local `.env` file.
 
+For interactive Telegram questions, run the query bot after the dashboard or simulator has written
+historian data:
+
+```bash
+python -m wtdt.telegram_alerts.query_bot
+```
+
+Then ask `/status` or `现在系统有什么问题？` in Telegram to receive the latest Operator Agent diagnosis.
+
 ## Demo Goal
 
 During the demo, the dashboard should show normal plant operation, allow controlled fault injection, and display alarms plus assistant recommendations within 60 seconds.
@@ -117,6 +126,7 @@ See:
 - [Architecture](docs/architecture.md)
 - [Cloud Bridge](docs/cloud-bridge.md)
 - [Telegram Alerts](docs/telegram-alerts.md)
+- [Operator Agent Integration](docs/agent-integration.md)
 - [Process Simulator](docs/process-simulator.md)
 - [Tag Dictionary](docs/tag-dictionary.md)
 - [Fault Catalog](docs/fault-catalog.md)

@@ -95,6 +95,12 @@ def format_alarm_message(event: AlarmEvent) -> str:
         lines.append(f"sequence: {event.sequence}")
     for item in event.evidence:
         lines.append(f"evidence: {item}")
+    if event.summary:
+        lines.append(f"agent summary: {event.summary}")
+    for item in event.checks or []:
+        lines.append(f"check: {item}")
+    for item in event.actions or []:
+        lines.append(f"action: {item}")
     if event.recommendation:
         lines.append(f"recommendation: {event.recommendation}")
     return "\n".join(lines)
@@ -106,4 +112,3 @@ def _truthy(value: str | None) -> bool:
 
 if __name__ == "__main__":
     main()
-

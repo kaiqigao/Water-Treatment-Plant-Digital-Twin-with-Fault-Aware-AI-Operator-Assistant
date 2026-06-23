@@ -12,6 +12,9 @@ class AlarmEvent:
     severity: str
     evidence: list[str]
     recommendation: str
+    summary: str = ""
+    checks: list[str] | None = None
+    actions: list[str] | None = None
     timestamp_utc: str = ""
     sequence: int | None = None
 
@@ -68,9 +71,12 @@ def parse_alarm_event(payload: bytes) -> AlarmEvent:
     code = _required_text(body, "code")
     severity = _optional_text(body, "severity", "unknown")
     recommendation = _optional_text(body, "recommendation", "")
+    summary = _optional_text(body, "summary", "")
     timestamp_utc = _optional_text(body, "timestamp_utc", "")
     sequence = body.get("sequence")
     evidence = _evidence_list(body.get("evidence", []))
+    checks = _evidence_list(body.get("checks", []))
+    actions = _evidence_list(body.get("actions", []))
 
     if sequence is not None:
         try:
@@ -83,6 +89,9 @@ def parse_alarm_event(payload: bytes) -> AlarmEvent:
         severity=severity,
         evidence=evidence,
         recommendation=recommendation,
+        summary=summary,
+        checks=checks,
+        actions=actions,
         timestamp_utc=timestamp_utc,
         sequence=sequence,
     )
@@ -108,4 +117,3 @@ def _evidence_list(value: Any) -> list[str]:
     if value:
         return [str(value).strip()]
     return []
-

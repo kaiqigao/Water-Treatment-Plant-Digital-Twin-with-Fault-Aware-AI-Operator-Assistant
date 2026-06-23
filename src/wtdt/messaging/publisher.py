@@ -4,6 +4,7 @@ from datetime import datetime
 from time import time
 from typing import Any
 
+from wtdt.agent.operator_agent import diagnose_snapshot
 from wtdt.messaging.topics import ALARM_EVENT_TOPIC, PLANT_STATE_TOPIC, PLC_COMMAND_TOPIC, cloud_tag_topic
 from wtdt.runtime import SimulationSnapshot
 
@@ -96,6 +97,7 @@ def build_plc_command_payload(snapshot: SimulationSnapshot) -> dict[str, Any]:
 
 
 def build_alarm_payloads(snapshot: SimulationSnapshot) -> list[dict[str, Any]]:
+    diagnosis = diagnose_snapshot(snapshot)
     return [
         {
             "timestamp_utc": snapshot.timestamp_utc,
@@ -104,6 +106,9 @@ def build_alarm_payloads(snapshot: SimulationSnapshot) -> list[dict[str, Any]]:
             "severity": detection.severity,
             "evidence": detection.evidence,
             "recommendation": recommendation,
+            "summary": diagnosis.summary,
+            "checks": diagnosis.checks[:3],
+            "actions": diagnosis.actions[:3],
         }
         for detection, recommendation in zip(
             snapshot.detections,
