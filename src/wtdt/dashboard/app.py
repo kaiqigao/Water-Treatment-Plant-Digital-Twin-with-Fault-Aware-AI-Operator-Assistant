@@ -1,6 +1,7 @@
 import os
 from html import escape
 from pathlib import Path
+from typing import Any
 
 import altair as alt
 import pandas as pd
@@ -9,6 +10,10 @@ import streamlit as st
 from wtdt.historian.store import SQLiteHistorian
 from wtdt.runtime import SimulationRuntime
 from wtdt.simulator.process import FaultScenario
+from wtdt.telegram_alerts.dashboard import alarm_events_from_snapshot
+from wtdt.telegram_alerts.gate import AlarmGate
+from wtdt.telegram_alerts.main import format_alarm_message
+from wtdt.telegram_alerts.sender import TelegramSender
 
 
 st.set_page_config(page_title="Water Treatment Digital Twin", layout="wide")
@@ -72,6 +77,13 @@ def _ensure_state() -> None:
         st.session_state.tank_level_setpoint_pct = DEFAULT_TANK_LEVEL_SETPOINT
     if "speed_multiplier" not in st.session_state:
         st.session_state.speed_multiplier = DEFAULT_SPEED_MULTIPLIER
+    if "telegram_alarm_gate" not in st.session_state:
+        st.session_state.telegram_alarm_gate = AlarmGate(
+            throttle_s=_float_config("TELEGRAM_THROTTLE_S", 60.0),
+            clear_after_s=_float_config("TELEGRAM_CLEAR_AFTER_S", 5.0),
+        )
+    if "telegram_sender" not in st.session_state:
+        st.session_state.telegram_sender = _make_telegram_sender()
     st.session_state.runtime.set_setpoints(
         ph_setpoint=st.session_state.ph_setpoint,
         tank_level_setpoint_pct=st.session_state.tank_level_setpoint_pct,
@@ -418,6 +430,7 @@ def _run_cycles(count: int) -> None:
         snapshot = st.session_state.runtime.tick(seconds=float(st.session_state.speed_multiplier))
         st.session_state.snapshots.append(snapshot)
         st.session_state.historian.write_snapshot(snapshot, source="dashboard")
+        _notify_telegram(snapshot)
 
 
 def _apply_setpoints_and_sample() -> None:
@@ -721,6 +734,75 @@ def _render_alarms(snapshot) -> None:
             </div>
             """
         )
+
+
+def _notify_telegram(snapshot) -> None:
+    gate = st.session_state.telegram_alarm_gate
+    sender = st.session_state.telegram_sender
+    gate.expire()
+    if sender is None:
+        return
+    for event in alarm_events_from_snapshot(snapshot):
+        if gate.observe(event.code):
+            sender.send(format_alarm_message(event))
+
+
+def _make_telegram_sender() -> TelegramSender | None:
+    token = _text_config("TELEGRAM_BOT_TOKEN", "")
+    chat_id = _text_config("TELEGRAM_CHAT_ID", "")
+    if not token or not chat_id or "paste_your" in token or "paste_your" in chat_id:
+        return None
+    return TelegramSender(
+        token=token,
+        chat_id=chat_id,
+        dry_run=_bool_config("DRY_RUN", False),
+    )
+
+
+def _text_config(key: str, default: str) -> str:
+    value = _streamlit_secret(key)
+    if value is not None:
+        return str(value).strip()
+    value = os.getenv(key)
+    if value is not None:
+        return value.strip()
+    return _dotenv_value(key, default).strip()
+
+
+def _bool_config(key: str, default: bool) -> bool:
+    value = _text_config(key, "")
+    if not value:
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def _float_config(key: str, default: float) -> float:
+    value = _text_config(key, "")
+    if not value:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
+def _streamlit_secret(key: str) -> Any | None:
+    try:
+        return st.secrets.get(key)
+    except Exception:
+        return None
+
+
+def _dotenv_value(key: str, default: str) -> str:
+    path = Path(".env")
+    if not path.exists():
+        return default
+    prefix = f"{key}="
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith(prefix):
+            return line.removeprefix(prefix)
+    return default
 
 
 if __name__ == "__main__":

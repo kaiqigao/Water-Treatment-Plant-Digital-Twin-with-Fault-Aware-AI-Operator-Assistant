@@ -47,6 +47,27 @@ services:
       - mqtt
       - simulator
 
+  telegram-alerts:
+    build: .
+    container_name: wtdt-telegram-alerts
+    profiles:
+      - telegram
+    command:
+      - python
+      - -m
+      - wtdt.telegram_alerts.main
+    environment:
+      MQTT_HOST: mqtt
+      MQTT_PORT: "1883"
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-paste_your_telegram_bot_token_here}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-paste_your_chat_id_here}
+      DRY_RUN: ${DRY_RUN:-true}
+      TELEGRAM_THROTTLE_S: ${TELEGRAM_THROTTLE_S:-60.0}
+      TELEGRAM_CLEAR_AFTER_S: ${TELEGRAM_CLEAR_AFTER_S:-5.0}
+    depends_on:
+      - mqtt
+      - simulator
+
   dashboard:
     build: .
     container_name: wtdt-dashboard

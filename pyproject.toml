@@ -25,6 +25,7 @@ dev = [
 [project.scripts]
 wtdt = "wtdt.__main__:main"
 wtdt-cloud-bridge = "wtdt.cloud_bridge.main:main"
+wtdt-telegram-alerts = "wtdt.telegram_alerts.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
