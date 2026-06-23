@@ -677,7 +677,7 @@ def _render_alarms(snapshot) -> None:
         snapshot,
         recent_snapshots=st.session_state.snapshots[-MAX_TREND_SAMPLES:],
     )
-    state_col, table_col, advice_col = st.columns([0.85, 2.25, 1.1], gap="small")
+    state_col, table_col = st.columns([0.85, 2.85], gap="medium")
     state_text = "ACTIVE" if snapshot.alarm_active else "CLEAR"
     state_color = "#d92d20" if snapshot.alarm_active else "#2f855a"
     state_bg = "#fff7f6" if snapshot.alarm_active else "#f0fdf4"
@@ -695,31 +695,22 @@ def _render_alarms(snapshot) -> None:
         )
 
     if not snapshot.detections:
-        with table_col:
-            st.dataframe(
-                pd.DataFrame(
-                    [{"severity": "none", "code": "clear", "evidence": "No active alarms detected."}]
-                ),
-                hide_index=True,
-                width="stretch",
-                height=116,
-            )
-        with advice_col:
-            st.html(_diagnosis_html(diagnosis))
-        return
+        alarm_rows = [
+            {"severity": "none", "code": "clear", "evidence": "No active alarms detected."}
+        ]
+    else:
+        alarm_rows = [
+            {
+                "severity": detection.severity,
+                "code": detection.code,
+                "evidence": " ".join(detection.evidence),
+            }
+            for detection in snapshot.detections
+        ]
 
-    alarm_rows = [
-        {
-            "severity": detection.severity,
-            "code": detection.code,
-            "evidence": " ".join(detection.evidence),
-        }
-        for detection in snapshot.detections
-    ]
     with table_col:
         st.dataframe(pd.DataFrame(alarm_rows), hide_index=True, width="stretch", height=116)
-    with advice_col:
-        st.html(_diagnosis_html(diagnosis))
+    st.html(_diagnosis_html(diagnosis))
 
 
 def _diagnosis_html(diagnosis: OperatorDiagnosis) -> str:
